@@ -1,10 +1,10 @@
 #include <fcntl.h>
+#include <pthread.h>
 
 #include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <pthread.h>
 
 #include "Test.hpp"
 #include "UdpServer.hpp"
