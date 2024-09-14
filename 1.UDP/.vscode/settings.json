@@ -1,0 +1,8 @@
+{
+    "makefile.configureOnOpen": true,
+    "files.associations": {
+        "cstdio": "cpp",
+        "iostream": "cpp",
+        "memory": "cpp"
+    }
+}
