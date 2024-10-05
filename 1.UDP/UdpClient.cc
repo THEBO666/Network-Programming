@@ -32,9 +32,9 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in server;
     bzero(&server, sizeof(server));
     server.sin_addr.s_addr = inet_addr(serverip.c_str());
-    server.sin_port = ntohs(serverport);
+    server.sin_port = htons(serverport);
     server.sin_family = AF_INET;
-    char buffer[1024];
+    char buffer[4096];
     std::string message;
     while (1) {
         std::cout << "Please Enter@ ";
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
         sendto(sockfd, message.c_str(), message.size(), 0, (struct sockaddr *)&server, sizeof(server));
         struct sockaddr_in temp;
         socklen_t len = sizeof(temp);
-        ssize_t n = recvfrom(sockfd, buffer, 1023, 0, (struct sockaddr *)&temp, &len);
+        ssize_t n = recvfrom(sockfd, buffer, 4096-1, 0, (struct sockaddr *)&temp, &len);
         if (n > 0) {
             buffer[n] = 0;
             std::cout << buffer << std::endl;

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <mysql/mysql.h>
-
-
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -59,6 +56,7 @@ public:
 
     }
     std::string ExcuteCommand(const std::string &cmd) {
+        if(!SafeCheck(cmd)) return "bad command";
         FILE *fp = popen(cmd.c_str(), "r");
         //if(!SafeCheck(cmd)) return "Bad Command";
         if (fp == nullptr) {
@@ -69,8 +67,9 @@ public:
         char buffer[4096];
         while (true) {
             char *ok = fgets(buffer, sizeof(buffer), fp);
-            if (ok == nullptr) //break;
+            if (ok == nullptr) break;
             result += buffer;
+
         }
         pclose(fp);
         return result;
