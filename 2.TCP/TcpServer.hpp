@@ -9,6 +9,11 @@
 #include <netinet/in.h>
 #include <string>
 #include <sys/queue.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <pthread.h>
+#include "ThreadPool.hpp"
 
 enum
 {
@@ -22,6 +27,21 @@ enum
 const int backlog = 5;
 const int defaultid = -1;
 const std::string defaultip = "0.0.0.0";
+class TcpServer;
+struct ThreadData
+{
+public:
+    ThreadData() {}
+    ThreadData(int fd, const std::string &ip, const uint16_t &port, TcpServer *t) : sockfd(fd), clientip(ip), clientport(port), tsvr(t)
+    {
+    }
+
+public:
+    int sockfd;
+    uint16_t clientport;
+    std::string clientip;
+    TcpServer *tsvr;
+};
 class TcpServer
 {
 public:
@@ -57,6 +77,7 @@ public:
         }
         lg(Info, "listen socket sucess, sockfd: %d", listensock_);
     }
+
     void Start()
     {
         lg(Info, "tcpserver is connecting...");
@@ -75,26 +96,63 @@ public:
             inet_ntop(AF_INET, &(client.sin_addr), clientip, sizeof(clientip));
             lg(Info, "get a new link..., sockfd: %d, client ip: %s, client port: %d", sockfd, clientip, clientport);
             // send(sockfd, "hello\r\n", 8, 0);
-            Service(sockfd,clientip,clientport);
+            // Service(sockfd, clientip, clientport);
+            // close(sockfd);
+            // pid_t id = fork();
+            // if (id == 0)
+            // {
+            //     close(listensock_);
+            //     // child;
+            //     if (fork() > 0)
+            //         exit(0);
+            //     // grandson
+            //     Service(sockfd, clientip, clientport); // 系统领养
+            //     close(sockfd);
+            //     exit(0);
+            // }
+            // close(sockfd);
+            // pid_t rid = waitpid(id, nullptr, 0);
+            // (void)rid;
+            // pthread_t tid;
+            // ThreadData *td = new ThreadData(sockfd, clientip, clientport,this);
+            // pthread_create(&tid, 0, Routine, td);
+
         }
     }
-    void Service(int sockfd,const std::string&clientip,const uint16_t &clientport)
+    static void *Routine(void *args)
+    {
+        pthread_detach(pthread_self());
+        ThreadData *td = static_cast<ThreadData *>(args);
+        td->tsvr->Service(td->sockfd, td->clientip, td->clientport);
+        delete td;
+        return nullptr;
+    }
+    void Service(int sockfd, const std::string &clientip, const uint16_t &clientport)
     {
         char buffer[4096];
         while (true)
         {
-            ssize_t n =read(sockfd,buffer,sizeof(buffer));
-            if(n>0)
+            ssize_t n = read(sockfd, buffer, sizeof(buffer));
+            if (n > 0)
             {
-                buffer[n]=0;
-                std::cout<<"client say# "<<buffer<<std::endl;
-                std::string echo_string ="tcpserver echo# ";
-                echo_string+=buffer;
-                write(sockfd,echo_string.c_str(),echo_string.size());
+                buffer[n] = 0;
+                // std::cout << "client say# " << buffer << std::endl;
+                lg(Info, "client: %s, %d say# %s", clientip.c_str(), clientport, buffer);
+                std::string echo_string = "tcpserver echo# ";
+                echo_string += buffer;
+                write(sockfd, echo_string.c_str(), echo_string.size());
+            }
+            else if (n == 0)
+            {
+                lg(Info, "%s:%d quit, server close sockfd: %d", clientip.c_str(), clientport, sockfd);
+                break;
+            }
+            else
+            {
+                lg(Warning, "read error, sockfd: %d, client ip: %s, client port: %d", sockfd, clientip.c_str(), clientport);
+                break;
             }
         }
-        
-        
     }
     ~TcpServer()
     {

@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <cstdlib>
 #include <cstring>
+#include <unistd.h>
 
 void Usage(std::string proc)
 {
@@ -32,12 +33,29 @@ int main(int argc, char *argv[])
     if (sockfd < 0)
     {
         std::cerr << "socket error" << std::endl;
+        return 1;
     }
     // 客户端不需显示绑定，操作系统自己调解
-    connect(sockfd, (struct sockaddr *)&server, sizeof(server));
+    // tcp需要连接
+    int n = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
+    if (n < 0)
+    {
+        std::cerr << "connect error..." << std::endl;
+        return 2;
+    }
+    std::string message;
     while (true)
     {
-
+        std::cout<<"Please Enter@ ";
+        std::getline(std::cin,message);
+        write(sockfd,message.c_str(),message.size());
+        char buffer[4096];
+        int n = read(sockfd,buffer,sizeof(buffer));
+        if(n>0)
+        {
+            buffer[n]=0;
+            std::cout<<"server say# "<<buffer<<std::endl;
+        }
     }
 
     return 0;
