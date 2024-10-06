@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 #include "Log.hpp"
+#include <unordered_map>
+#include <fstream>
 
 extern Log lg;
 
@@ -41,7 +43,7 @@ public:
     ~Task()
     {
     }
-
+    
 private:
     int sockfd_;
     std::string clientip_;
